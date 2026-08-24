@@ -1,0 +1,7 @@
+# Account collects sex, area, and self-introduction at registration
+
+Stage 1's shipped registration screen collects `sex`, `region`/`prefecture`/`city`, and a self-introduction `comment` via `registUser` — fields that are dating-relevant data and would normally be classified as Profile, not Account, per this project's Account/Profile split. This drifted from the original Stage 1 ticket, which specified a login-ID+password-only registration form.
+
+When Stage 2 (Profile creation) was scoped, we considered moving those fields out of registration and into the new Profile flow to restore the original boundary, but decided to keep them in registration and update the domain model to match instead — reworking a screen already built and tested cost more than adjusting the glossary. Profile's remaining scope is age/income/address/photos.
+
+A related but separate misunderstanding surfaced at the same time: the original Stage 1 ticket assumed `registUser` takes a client-chosen `login_id`/`password`, so a first attempt at this fix added those as form fields. Reading bloom's actual backend source (`Class_UserApi.php`/`Class_User.php`) showed `registUser` ignores any `login_id`/`password` the client sends — both are always server-generated (`login_id` is `MAX(login_id)+1`, `password` is random), returned to the client only inside the registration response's `user_data`. That form-field addition was reverted; how the app should use these server-issued credentials (silent recovery, other login methods, etc.) is being decided in a separate map.
