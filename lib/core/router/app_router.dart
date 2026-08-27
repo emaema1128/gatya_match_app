@@ -12,14 +12,14 @@ part 'app_router.g.dart';
 
 @Riverpod(keepAlive: true)
 GoRouter appRouter(Ref ref) {
-  final refreshNotifier = RouterRefreshNotifier(ref);
+  final refreshNotifier = RouterRefreshNotifier(ref);// authControllerProviderの状態変化を監視して、リダイレクトロジックを再評価するためのChangeNotifier
   ref.onDispose(refreshNotifier.dispose);
-
+  // GoRouterのインスタンスを作成し、ルート定義、リフレッシュ通知、リダイレクトロジックを設定
   return GoRouter(
-    initialLocation: const SplashRoute().location,
-    routes: $appRoutes,
-    refreshListenable: refreshNotifier,
-    redirect: (context, state) => _redirect(ref, state),
+    initialLocation: const SplashRoute().location,// 初期画面をスプラッシュ画面に設定
+    routes: $appRoutes,// ルート定義を設定
+    refreshListenable: refreshNotifier,// authControllerProviderの状態変化を監視して、リダイレクトロジックを再評価するためのChangeNotifier
+    redirect: (context, state) => _redirect(ref, state),// 認証状態と現在の画面に基づいてリダイレクト先を決定するロジック
   );
 }
 
