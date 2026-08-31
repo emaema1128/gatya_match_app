@@ -12,11 +12,18 @@ import '../application/profile_controller.dart';
 import '../domain/profile_data.dart';
 
 /// プロフィール作成/編集画面(共通)。
-/// - 新規登録直後(スキップ可能な任意ステップ)とマイページからの編集の両方で使う
+/// - 新規登録直後(スキップ可能な任意ステップ、[isOnboarding]=true)と
+///   マイページタブ([isOnboarding]=false、デフォルト)の両方で使う
 /// - age/income/address/ニックネーム/マッチングメール設定は「保存」ボタンでまとめて送信
 /// - 写真(最大3枚)は選択・削除のたびに即時アップロード/削除
 class ProfileScreen extends ConsumerStatefulWidget {
-  const ProfileScreen({super.key});
+  const ProfileScreen({super.key, this.isOnboarding = false});
+
+  /// 新規登録直後の任意ステップとして開かれたかどうか。
+  /// true のときだけ「あとで設定する」ボタンを出し、保存後にホームへ遷移する。
+  /// マイページタブ(ボトムナビのルート画面)として開かれた場合は false のままにし、
+  /// 保存してもこの画面に留まり、代わりに設定(ログアウト等)への導線を表示する。
+  final bool isOnboarding;
 
   @override
   ConsumerState<ProfileScreen> createState() => _ProfileScreenState();
@@ -76,7 +83,9 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
         );
     if (!mounted) return;
     if (ref.read(profileControllerProvider).hasError) return;
-    if (!Navigator.of(context).canPop()) {
+    // オンボーディング時のみ、保存後にホームへ自動遷移する。
+    // マイページタブから来た場合はこの画面に留まる。
+    if (widget.isOnboarding) {
       const HomeTabRoute().go(context);
     }
   }
@@ -87,7 +96,19 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
     final data = profileAsync.value;
 
     return Scaffold(
-      appBar: AppBar(title: const Text('プロフィール')),
+      appBar: AppBar(
+        title: const Text('プロフィール'),
+        // オンボーディング中は設定より入力に集中させたいので、歯車アイコンは出さない。
+        actions: widget.isOnboarding
+            ? null
+            : [
+                IconButton(
+                  icon: const Icon(Icons.settings_outlined),
+                  tooltip: '設定',
+                  onPressed: () => const SettingsRoute().push(context),
+                ),
+              ],
+      ),
       body: SafeArea(
         child: data == null
             ? Center(
@@ -103,7 +124,6 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
   Widget _buildForm(BuildContext context, ProfileData data, {required bool isBusy}) {
     _initializeFrom(data);
     final profileAsync = ref.watch(profileControllerProvider);
-    final canPop = Navigator.of(context).canPop();
 
     return SingleChildScrollView(
       padding: const EdgeInsets.all(16),
@@ -166,7 +186,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
               style: TextStyle(color: Theme.of(context).colorScheme.error),
             ),
           ],
-          if (!canPop) ...[
+          if (widget.isOnboarding) ...[
             const SizedBox(height: 12),
             TextButton(
               onPressed: isBusy ? null : () => const HomeTabRoute().go(context),

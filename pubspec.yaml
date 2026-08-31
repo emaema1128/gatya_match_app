@@ -45,6 +45,9 @@ dependencies:
   android_id: ^0.5.2+1
   flame: ^1.38.0
   image_picker: ^1.2.3
+  record: ^7.1.1
+  audioplayers: ^6.8.1
+  path_provider: ^2.1.6
 dev_dependencies:
   flutter_test:
     sdk: flutter
@@ -97,6 +100,8 @@ flutter:
   assets:
     - assets/images/chair.png
     - assets/images/chair2.png
+    - assets/images/gacha_machine.png
+    - assets/images/gacha_capsule.png
 
   # To add assets to your application, add an assets section, like this:
   # assets:

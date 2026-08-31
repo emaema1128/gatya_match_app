@@ -1,8 +1,5 @@
 import '../../../core/auth/sex.dart';
-
-// TODO: bloomの画像配信ベースURLは`https://bloom-developer.com/` + 保存パスと推測
-// しているが未検証(実際に写真をアップロードして表示確認するまでは仮定)。
-const _kBloomBaseUrl = 'https://bloom-developer.com/';
+import '../../../core/network/bloom_field_parsers.dart';
 
 /// `getUserData`から読み取ったProfile画面向けの表示用データ。
 class ProfileData {
@@ -30,28 +27,16 @@ class ProfileData {
     final sexValue = userData['sex']?.toString();
     return ProfileData(
       sex: sexValue == Sex.female.apiValue ? Sex.female : Sex.male,
-      ageId: _nullableId(userData['age_id']),
-      incomeId: _nullableId(userData['income_id']),
-      addressId: _nullableId(userData['address_id']),
+      ageId: nullableBloomId(userData['age_id']),
+      incomeId: nullableBloomId(userData['income_id']),
+      addressId: nullableBloomId(userData['address_id']),
       username: (userData['username'] as String?) ?? '',
       rejectMatchingMailFlag: userData['reject_matching_mail_flag']?.toString() == '1',
       photoUrls: [
-        _photoUrl(userData['img1_compress_path'] ?? userData['img1_path']),
-        _photoUrl(userData['img2_compress_path'] ?? userData['img2_path']),
-        _photoUrl(userData['img3_compress_path'] ?? userData['img3_path']),
+        resolveBloomAssetUrl(userData['img1_compress_path'] ?? userData['img1_path']),
+        resolveBloomAssetUrl(userData['img2_compress_path'] ?? userData['img2_path']),
+        resolveBloomAssetUrl(userData['img3_compress_path'] ?? userData['img3_path']),
       ],
     );
-  }
-
-  static String? _nullableId(Object? value) {
-    if (value == null) return null;
-    final str = value.toString();
-    return (str.isEmpty || str == '0') ? null : str;
-  }
-
-  static String? _photoUrl(Object? path) {
-    final str = path as String?;
-    if (str == null || str.isEmpty) return null;
-    return '$_kBloomBaseUrl$str';
   }
 }

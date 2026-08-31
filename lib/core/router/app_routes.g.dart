@@ -12,6 +12,10 @@ List<RouteBase> get $appRoutes => [
   $loginRoute,
   $registrationRoute,
   $profileRoute,
+  $settingsRoute,
+  $matchCelebrationRoute,
+  $chatThreadRoute,
+  $gachaRevealRoute,
   $homeShellRouteData,
 ];
 
@@ -134,6 +138,124 @@ mixin _$ProfileRoute on GoRouteData {
   void replace(BuildContext context) => context.replace(location);
 }
 
+RouteBase get $settingsRoute => GoRouteData.$route(
+  path: '/mypage/settings',
+
+  factory: _$SettingsRoute._fromState,
+);
+
+mixin _$SettingsRoute on GoRouteData {
+  static SettingsRoute _fromState(GoRouterState state) => const SettingsRoute();
+
+  @override
+  String get location => GoRouteData.$location('/mypage/settings');
+
+  @override
+  void go(BuildContext context) => context.go(location);
+
+  @override
+  Future<T?> push<T>(BuildContext context) => context.push<T>(location);
+
+  @override
+  void pushReplacement(BuildContext context) =>
+      context.pushReplacement(location);
+
+  @override
+  void replace(BuildContext context) => context.replace(location);
+}
+
+RouteBase get $matchCelebrationRoute => GoRouteData.$route(
+  path: '/matches/celebration/:matchedSystemId',
+
+  factory: _$MatchCelebrationRoute._fromState,
+);
+
+mixin _$MatchCelebrationRoute on GoRouteData {
+  static MatchCelebrationRoute _fromState(GoRouterState state) =>
+      MatchCelebrationRoute(
+        matchedSystemId: int.parse(state.pathParameters['matchedSystemId']!)!,
+      );
+
+  MatchCelebrationRoute get _self => this as MatchCelebrationRoute;
+
+  @override
+  String get location => GoRouteData.$location(
+    '/matches/celebration/${Uri.encodeComponent(_self.matchedSystemId.toString())}',
+  );
+
+  @override
+  void go(BuildContext context) => context.go(location);
+
+  @override
+  Future<T?> push<T>(BuildContext context) => context.push<T>(location);
+
+  @override
+  void pushReplacement(BuildContext context) =>
+      context.pushReplacement(location);
+
+  @override
+  void replace(BuildContext context) => context.replace(location);
+}
+
+RouteBase get $chatThreadRoute => GoRouteData.$route(
+  path: '/chat/thread/:partnerId',
+
+  factory: _$ChatThreadRoute._fromState,
+);
+
+mixin _$ChatThreadRoute on GoRouteData {
+  static ChatThreadRoute _fromState(GoRouterState state) => ChatThreadRoute(
+    partnerId: int.parse(state.pathParameters['partnerId']!)!,
+  );
+
+  ChatThreadRoute get _self => this as ChatThreadRoute;
+
+  @override
+  String get location => GoRouteData.$location(
+    '/chat/thread/${Uri.encodeComponent(_self.partnerId.toString())}',
+  );
+
+  @override
+  void go(BuildContext context) => context.go(location);
+
+  @override
+  Future<T?> push<T>(BuildContext context) => context.push<T>(location);
+
+  @override
+  void pushReplacement(BuildContext context) =>
+      context.pushReplacement(location);
+
+  @override
+  void replace(BuildContext context) => context.replace(location);
+}
+
+RouteBase get $gachaRevealRoute => GoRouteData.$route(
+  path: '/gacha/reveal',
+
+  factory: _$GachaRevealRoute._fromState,
+);
+
+mixin _$GachaRevealRoute on GoRouteData {
+  static GachaRevealRoute _fromState(GoRouterState state) =>
+      const GachaRevealRoute();
+
+  @override
+  String get location => GoRouteData.$location('/gacha/reveal');
+
+  @override
+  void go(BuildContext context) => context.go(location);
+
+  @override
+  Future<T?> push<T>(BuildContext context) => context.push<T>(location);
+
+  @override
+  void pushReplacement(BuildContext context) =>
+      context.pushReplacement(location);
+
+  @override
+  void replace(BuildContext context) => context.replace(location);
+}
+
 RouteBase get $homeShellRouteData => StatefulShellRouteData.$route(
   factory: $HomeShellRouteDataExtension._fromState,
   branches: [
@@ -145,9 +267,32 @@ RouteBase get $homeShellRouteData => StatefulShellRouteData.$route(
     StatefulShellBranchData.$branch(
       routes: [
         GoRouteData.$route(
-          path: '/settings',
+          path: '/matches',
 
-          factory: _$SettingsTabRoute._fromState,
+          factory: _$MatchesTabRoute._fromState,
+        ),
+      ],
+    ),
+    StatefulShellBranchData.$branch(
+      routes: [
+        GoRouteData.$route(path: '/chat', factory: _$ChatTabRoute._fromState),
+      ],
+    ),
+    StatefulShellBranchData.$branch(
+      routes: [
+        GoRouteData.$route(
+          path: '/mypage',
+
+          factory: _$ProfileTabRoute._fromState,
+        ),
+      ],
+    ),
+    StatefulShellBranchData.$branch(
+      routes: [
+        GoRouteData.$route(
+          path: '/points',
+
+          factory: _$PointsTabRoute._fromState,
         ),
       ],
     ),
@@ -179,12 +324,74 @@ mixin _$HomeTabRoute on GoRouteData {
   void replace(BuildContext context) => context.replace(location);
 }
 
-mixin _$SettingsTabRoute on GoRouteData {
-  static SettingsTabRoute _fromState(GoRouterState state) =>
-      const SettingsTabRoute();
+mixin _$MatchesTabRoute on GoRouteData {
+  static MatchesTabRoute _fromState(GoRouterState state) =>
+      const MatchesTabRoute();
 
   @override
-  String get location => GoRouteData.$location('/settings');
+  String get location => GoRouteData.$location('/matches');
+
+  @override
+  void go(BuildContext context) => context.go(location);
+
+  @override
+  Future<T?> push<T>(BuildContext context) => context.push<T>(location);
+
+  @override
+  void pushReplacement(BuildContext context) =>
+      context.pushReplacement(location);
+
+  @override
+  void replace(BuildContext context) => context.replace(location);
+}
+
+mixin _$ChatTabRoute on GoRouteData {
+  static ChatTabRoute _fromState(GoRouterState state) => const ChatTabRoute();
+
+  @override
+  String get location => GoRouteData.$location('/chat');
+
+  @override
+  void go(BuildContext context) => context.go(location);
+
+  @override
+  Future<T?> push<T>(BuildContext context) => context.push<T>(location);
+
+  @override
+  void pushReplacement(BuildContext context) =>
+      context.pushReplacement(location);
+
+  @override
+  void replace(BuildContext context) => context.replace(location);
+}
+
+mixin _$ProfileTabRoute on GoRouteData {
+  static ProfileTabRoute _fromState(GoRouterState state) =>
+      const ProfileTabRoute();
+
+  @override
+  String get location => GoRouteData.$location('/mypage');
+
+  @override
+  void go(BuildContext context) => context.go(location);
+
+  @override
+  Future<T?> push<T>(BuildContext context) => context.push<T>(location);
+
+  @override
+  void pushReplacement(BuildContext context) =>
+      context.pushReplacement(location);
+
+  @override
+  void replace(BuildContext context) => context.replace(location);
+}
+
+mixin _$PointsTabRoute on GoRouteData {
+  static PointsTabRoute _fromState(GoRouterState state) =>
+      const PointsTabRoute();
+
+  @override
+  String get location => GoRouteData.$location('/points');
 
   @override
   void go(BuildContext context) => context.go(location);

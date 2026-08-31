@@ -68,5 +68,7 @@
 	</array>
 	<key>NSPhotoLibraryUsageDescription</key>
 	<string>部屋に置く家具の写真を選ぶために使用します。</string>
+	<key>NSMicrophoneUsageDescription</key>
+	<string>チャットで音声メッセージを録音するために使用します。</string>
 </dict>
 </plist>
