@@ -7,7 +7,7 @@ part of 'received_like_list_controller.dart';
 // **************************************************************************
 
 String _$receivedLikeListControllerHash() =>
-    r'cb10c00966939536af96b1ba2aa3d0b17217b9fd';
+    r'c51ff635917c1be5153135d1406af00d86966c8a';
 
 /// 受け取った・未マッチのいいね一覧
 /// ([gacha-redesign/issues/02](../../../../.scratch/gacha-redesign/issues/02-like-match-tab-split.md)

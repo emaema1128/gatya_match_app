@@ -4,6 +4,7 @@ import 'package:riverpod_annotation/riverpod_annotation.dart';
 
 import '../../../core/network/bloom_api_client.dart';
 import '../domain/match_data.dart';
+import 'match_list_controller.dart';
 
 part 'received_like_list_controller.g.dart';
 
@@ -29,5 +30,22 @@ class ReceivedLikeListController extends _$ReceivedLikeListController {
   Future<void> refresh() async {
     ref.invalidateSelf();
     await future;
+  }
+
+  /// 受信いいねの相手に「いいねを返す」(=マッチさせる)。相手は既に自分に
+  /// いいね済みのはずなので、既存の`sendLike`をそのまま呼べば即マッチが
+  /// 成立する想定([route_api.php]の`sendLike`は、相手からの既存いいね
+  /// (`to_me_like`)があれば即`status: 'match'`を返す)。
+  /// [GachaController.likeCandidate]と同じパターンで、マッチ成立時のみ
+  /// マッチ一覧・この受信いいね一覧の両方を無効化する
+  /// (`likes.status`が`MATCH`に変わりこの一覧のWHERE句から自然に外れるため)。
+  Future<bool> returnLike(int targetId) async {
+    final data = await ref.read(bloomApiClientProvider).callApi('sendLike', {'target_id': targetId});
+    final matched = data['status'] == 'match';
+    if (matched) {
+      ref.invalidate(matchListControllerProvider);
+      ref.invalidateSelf();
+    }
+    return matched;
   }
 }

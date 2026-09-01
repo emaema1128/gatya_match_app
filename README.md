@@ -97,12 +97,17 @@ lib/
 | | `presentation/gacha_reveal_screen.dart` | ガチャの排出結果を1人ずつ見せる、写真メイン(カードの3/5)+プロフィール情報(2/5)のフルスクリーンスワイプカード画面。◀▶で候補間を移動、カードを上にスワイプで「いいね」送信(1スピンにつき1人まで)、タップで画面遷移せず`ProfileDetailsSheet`(写真ギャラリー+詳細プロフィール、`features/matches/`と共用)を開く。いいねの結果がマッチ成立なら`MatchCelebrationRoute`へ遷移する |
 | | `application/gacha_controller.dart` | `spinGacha`(ガチャを回す、最大3人分の候補を一度に取得)/`sendLike`(いいね)のサーバー通信を行う処理 |
 | | `domain/gacha_home_state.dart` / `gacha_spin_status.dart` | 画面の表示状態(残高・結果の種類・候補データのリスト)を表すデータクラス |
-| `features/matches/` | `presentation/match_list_screen.dart` | 「Like」タブの中身。上部の`SegmentedButton`で「いいね(受け取った・未マッチ)」「マッチ」を切り替える。どちらも0件の場合は次の行動を促すメッセージを表示 |
-| | `presentation/match_celebration_screen.dart` | 「マッチしました!」演出画面。`features/gacha/`のいいねボタンから、マッチ成立時に遷移してくる |
-| | `presentation/match_profile_card.dart` | いいね一覧・マッチ一覧・マッチ成立画面で共通の、相手プロフィールの抜粋カード。タップで画面遷移せず`ProfileDetailsSheet`を開く |
-| | `presentation/profile_details_sheet.dart` | カードタップで開く、写真ギャラリー+年齢/居住地/年収+自己紹介全文のボトムシート(`showProfileDetailsSheet`)。元は`GachaRevealScreen`専用だったものを共通化 |
+| `features/matches/` | `presentation/match_list_screen.dart` | 「Like」タブの中身。上部の`SegmentedButton`で「いいね(受け取った・未マッチ)」「マッチ」を切り替える。どちらも2列グリッド(`GridView`)で、「いいね」は`ReceivedLikeGridCard`、「マッチ」は`MatchGridCard`を表示。どちらも0件の場合は次の行動を促すメッセージを表示 |
+| | `presentation/action_button.dart` | 「スキップ」「マッチ」等のアクション用の丸ボタン(`ActionButton`)。アイコン指定時は正円、ラベル指定時はテキストの長さに応じて伸びる楕円(スタジアム型)になる。`received_like_grid_card.dart`/`received_like_detail_screen.dart`で共用 |
+| | `presentation/profile_photo_overlay.dart` | 写真いっぱいの背景の下部に、名前と自己紹介文をグラデーションで重ねて表示するカードの中身(`ProfilePhotoOverlay`)。`received_like_grid_card.dart`/`match_grid_card.dart`/`match_celebration_screen.dart`で共用 |
+| | `presentation/received_like_grid_card.dart` | 「いいね」タブのグリッドカード。右スワイプ(または「マッチ」ボタン)でいいね返し(マッチ)、左スワイプ(または「スキップ」ボタン)で拒否(スキップ)する。タップで`ReceivedLikeDetailRoute`へ遷移 |
+| | `presentation/received_like_detail_screen.dart` | グリッドカードタップで開くフルスクリーンのプロフィール詳細ページ。写真は左右端タップでめくり、カード全体の左右フリック(またはボタン)でマッチ/拒否を行う |
+| | `presentation/match_grid_card.dart` | 「マッチ」タブのグリッドカード(`MatchGridCard`)。マッチ済みの相手には意思決定が不要なため、スワイプ操作やアクションボタンは持たず、タップで`ProfileDetailsSheet`を開くだけの構成 |
+| | `presentation/match_celebration_screen.dart` | 「マッチしました!」演出画面。`features/gacha/`のいいねボタン、および`received_like_grid_card.dart`/`received_like_detail_screen.dart`のいいね返しから、マッチ成立時に遷移してくる。相手は`ProfilePhotoOverlay`のカードで表示。「チャットへ進む」ボタンは、戻った時にこの演出画面に戻ってしまわないよう、先に`ChatTabRoute`へ切り替えてから`ChatThreadRoute`を積む |
+| | `presentation/profile_details_sheet.dart` | カードタップで開く、写真ギャラリー+年齢/居住地/年収+自己紹介全文のボトムシート(`showProfileDetailsSheet`)。元は`GachaRevealScreen`専用だったものを共通化(「いいね」タブのグリッドカードはこれを使わず、専用の`received_like_detail_screen.dart`を使う——写真送りとマッチ/拒否フリックのジェスチャー競合を避けるため) |
 | | `application/match_list_controller.dart` | マッチ一覧(「マッチ」セグメント)をサーバーから取得する処理 |
-| | `application/received_like_list_controller.dart` | 受け取った・未マッチのいいね一覧(「いいね」セグメント)をサーバーから取得する処理 |
+| | `application/received_like_list_controller.dart` | 受け取った・未マッチのいいね一覧(「いいね」セグメント)をサーバーから取得する処理。`returnLike`でいいね返し(`sendLike`を流用)を送信し、マッチ成立時はマッチ一覧・この一覧の両方を無効化する |
+| | `application/skipped_like_ids_controller.dart` | 「いいね」タブで拒否(スキップ)した相手のsystem_idをアプリ内メモリのみで保持する暫定実装。拒否のサーバー永続化(`STATUS_REJECT`)はこのリポジトリの外(bloomバックエンド本体の`Class_Likes.php`)側の対応待ちのため未実装——アプリ再起動で一覧に戻ってきてしまう |
 | | `domain/match_data.dart` | サーバーから取得したマッチ/いいね情報(写真最大3枚・年齢/居住地/年収・自己紹介)を、画面で使いやすい形にまとめたデータクラス。ガチャの候補データのパースにも共用される |
 | `features/chat/` | `presentation/chat_tab_screen.dart` | トーク一覧画面(チャットタブの中身)。マッチした相手ごとに1行、直近のメッセージ・未読件数を表示。行をタップすると`ChatThreadRoute`へ遷移 |
 | | `presentation/chat_thread_screen.dart` | 個別チャットスレッド画面(テキスト+画像+音声)。残高表示、数秒間隔のポーリングによる新着メッセージ取得、メッセージ/画像/音声送信、受信画像・音声のタップ課金閲覧・再生(初回のみ課金) |

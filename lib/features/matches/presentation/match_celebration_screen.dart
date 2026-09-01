@@ -4,7 +4,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/router/app_routes.dart';
 import '../application/match_list_controller.dart';
 import '../domain/match_data.dart';
-import 'match_profile_card.dart';
+import 'profile_details_sheet.dart';
+import 'profile_photo_overlay.dart';
 
 /// 「マッチしました!」演出画面
 /// ([stage4-match-celebration](../../../../.scratch/stage4-match-celebration/map.md)で決定)。
@@ -28,7 +29,7 @@ class MatchCelebrationScreen extends ConsumerWidget {
     final matchesAsync = ref.watch(matchListControllerProvider);
 
     return Scaffold(
-      appBar: AppBar(title: const Text('マッチしました!')),
+      // appBar: AppBar(title: const Text('マッチしました!')),
       body: SafeArea(
         child: matchesAsync.when(
           data: (matches) {
@@ -66,10 +67,31 @@ class MatchCelebrationScreen extends ConsumerWidget {
               textAlign: TextAlign.center,
             ),
           ),
-          const SizedBox(height: 24),
-          MatchProfileCard(match: match),
+          const SizedBox(height: 20),
+          AspectRatio(
+            aspectRatio: 4 / 5,
+            child: Card(
+              clipBehavior: Clip.antiAlias,
+              child: InkWell(
+                // onTap: () => showProfileDetailsSheet(context, match),
+                child: ProfilePhotoOverlay(match: match, usernameFontSize: 22, commentFontSize: 15),
+              ),
+            ),
+          ),
           const SizedBox(height: 32),
+          // マッチ成立の勢いのままチャットへ進めるよう、こちらを主導線(ElevatedButton)にする。
+          // チャットスレッドで「戻る」を押した時にこの演出画面へ戻ってしまわないよう、
+          // 先にチャットタブへ切り替えてスタックを畳んでから、その上にスレッドを積む
+          // (チャット一覧からスレッドを開いた場合と同じスタック形状にする)。
           ElevatedButton(
+            onPressed: () {
+              const ChatTabRoute().go(context);
+              ChatThreadRoute(partnerId: matchedSystemId).push(context);
+            },
+            child: const Text('チャットへ進む'),
+          ),
+          const SizedBox(height: 12),
+          TextButton(
             onPressed: () => const MatchesTabRoute().go(context),
             child: const Text('マッチ一覧を見る'),
           ),

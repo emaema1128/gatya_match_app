@@ -11,6 +11,7 @@ import '../../features/home/presentation/home_shell_screen.dart';
 import '../../features/home/presentation/home_tab_screen.dart';
 import '../../features/matches/presentation/match_celebration_screen.dart';
 import '../../features/matches/presentation/match_list_screen.dart';
+import '../../features/matches/presentation/received_like_detail_screen.dart';
 import '../../features/point/presentation/points_tab_screen.dart';
 import '../../features/profile/presentation/profile_screen.dart';
 import '../../features/profile/presentation/settings_screen.dart';
@@ -112,6 +113,21 @@ class MatchCelebrationRoute extends GoRouteData with _$MatchCelebrationRoute {
   @override
   Widget build(BuildContext context, GoRouterState state) =>
       MatchCelebrationScreen(matchedSystemId: matchedSystemId);
+}
+
+// 受信いいねの相手のプロフィール詳細ページ(フルスクリーン)。
+// 「いいね」タブのグリッドカードをタップすると開く。ボトムシート
+// ([ProfileDetailsSheet])ではなく専用ページにしているのは、カード全体の
+// 左右フリックでマッチ/拒否の意思決定を行うため
+// (ボトムシート自体の上下ドラッグと競合させないための切り分け)。
+@TypedGoRoute<ReceivedLikeDetailRoute>(path: '/matches/received-like/:systemId')
+class ReceivedLikeDetailRoute extends GoRouteData with _$ReceivedLikeDetailRoute {
+  const ReceivedLikeDetailRoute({required this.systemId});
+
+  final int systemId;
+
+  @override
+  Widget build(BuildContext context, GoRouterState state) => ReceivedLikeDetailScreen(systemId: systemId);
 }
 
 // チャットの個別スレッド画面

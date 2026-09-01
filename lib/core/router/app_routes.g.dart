@@ -14,6 +14,7 @@ List<RouteBase> get $appRoutes => [
   $profileRoute,
   $settingsRoute,
   $matchCelebrationRoute,
+  $receivedLikeDetailRoute,
   $chatThreadRoute,
   $gachaRevealRoute,
   $homeShellRouteData,
@@ -181,6 +182,39 @@ mixin _$MatchCelebrationRoute on GoRouteData {
   @override
   String get location => GoRouteData.$location(
     '/matches/celebration/${Uri.encodeComponent(_self.matchedSystemId.toString())}',
+  );
+
+  @override
+  void go(BuildContext context) => context.go(location);
+
+  @override
+  Future<T?> push<T>(BuildContext context) => context.push<T>(location);
+
+  @override
+  void pushReplacement(BuildContext context) =>
+      context.pushReplacement(location);
+
+  @override
+  void replace(BuildContext context) => context.replace(location);
+}
+
+RouteBase get $receivedLikeDetailRoute => GoRouteData.$route(
+  path: '/matches/received-like/:systemId',
+
+  factory: _$ReceivedLikeDetailRoute._fromState,
+);
+
+mixin _$ReceivedLikeDetailRoute on GoRouteData {
+  static ReceivedLikeDetailRoute _fromState(GoRouterState state) =>
+      ReceivedLikeDetailRoute(
+        systemId: int.parse(state.pathParameters['systemId']!)!,
+      );
+
+  ReceivedLikeDetailRoute get _self => this as ReceivedLikeDetailRoute;
+
+  @override
+  String get location => GoRouteData.$location(
+    '/matches/received-like/${Uri.encodeComponent(_self.systemId.toString())}',
   );
 
   @override

@@ -114,7 +114,7 @@ class _GachaScreenState extends ConsumerState<GachaScreen> {
           onPressed: _spin,
           child: const Padding(
             padding: EdgeInsets.symmetric(horizontal: 32, vertical: 20),
-            child: Text('ガチャを回す', style: TextStyle(fontSize: 18)),
+            child: Text('ガチャる', style: TextStyle(fontSize: 18)),
           ),
         ),
       ],

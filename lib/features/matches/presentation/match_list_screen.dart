@@ -7,9 +7,11 @@ import '../../../core/network/bloom_api_exception.dart';
 // Controller = APIからデータを取得し、画面に渡す役割を持つクラス(状態管理の中心)。
 import '../application/match_list_controller.dart';
 import '../application/received_like_list_controller.dart';
+import '../application/skipped_like_ids_controller.dart';
 // MatchData = マッチ相手1件分のデータを表すモデルクラス。
 import '../domain/match_data.dart';
-import 'match_profile_card.dart';
+import 'match_grid_card.dart';
+import 'received_like_grid_card.dart';
 
 enum _LikeMatchSegment { received, matched }
 
@@ -65,8 +67,7 @@ class _MatchListScreenState extends ConsumerState<MatchListScreen> {
 
 
 // 「いいね(受け取った・未マッチ)」タブの中身。
-// ConsumerWidget = StatelessWidgetのRiverpod版。自前のStateは持たず、
-// 状態(データ)はすべてProvider側(Controller)に持たせる。
+// ConsumerWidget = StatelessWidgetのRiverpod版。自前のStateは持たず、状態(データ)はすべてProvider側(Controller)に持たせる。
 class _ReceivedLikeTab extends ConsumerWidget {
   const _ReceivedLikeTab();
 
@@ -76,21 +77,27 @@ class _ReceivedLikeTab extends ConsumerWidget {
     // ref.watch: Providerの値を「購読」する。値が変わるたびbuild()が自動で再実行される。
     // AsyncValue<...> = 「読み込み中 / 成功 / エラー」の3状態をまとめて表す型(API通信の結果によく使う)。
     final receivedLikesAsync = ref.watch(receivedLikeListControllerProvider);
+    // この場でスキップ(拒否)した相手のsystem_id。サーバー未対応のためローカルのみで一覧から隠す
+    // ([SkippedLikeIdsController]参照)。
+    final skippedIds = ref.watch(skippedLikeIdsControllerProvider);
     // RefreshIndicator = 画面を下に引っ張ると再読み込みできる、いわゆる「pull to refresh」。
     return RefreshIndicator(
       // ref.read: watchと違い「今の値を1回だけ読む」。
       // ボタン操作などのイベントハンドラ内ではread、build()内の表示にはwatchを使うのが基本。
       onRefresh: () => ref.read(receivedLikeListControllerProvider.notifier).refresh(),
-      child: _buildBody(
-        context,
-        receivedLikesAsync,
-        emptyMessage: 'まだいいねが届いていません。',
+      child: receivedLikesAsync.when(
+        data: (matches) {
+          final visible = matches.where((match) => !skippedIds.contains(match.systemId)).toList();
+          return visible.isEmpty ? _buildEmptyState(context, 'まだいいねが届いていません。') : _buildReceivedLikeGrid(visible);
+        },
+        loading: () => const Center(child: CircularProgressIndicator()),
+        error: (error, _) => _buildErrorState(context, error),
       ),
     );
   }
 }
 
-/// マッチ済みセグメント(旧・単一「Like」タブの中身)。
+/// マッチ済みセグメント。
 class _MatchTab extends ConsumerWidget {
   const _MatchTab();
 
@@ -114,7 +121,7 @@ class _MatchTab extends ConsumerWidget {
 Widget _buildBody(BuildContext context, AsyncValue<List<MatchData>> matchesAsync, {required String emptyMessage}) {
   return matchesAsync.when(
     // data: 読み込み成功時。matchesは実際のデータ(リスト)。
-    data: (matches) => matches.isEmpty ? _buildEmptyState(context, emptyMessage) : _buildList(matches),
+    data: (matches) => matches.isEmpty ? _buildEmptyState(context, emptyMessage) : _buildMatchGrid(matches),
     // loading: 読み込み中。ぐるぐる回るインジケーターを画面中央に表示する。
     loading: () => const Center(child: CircularProgressIndicator()),
     // error: 通信エラーなどが起きたとき。
@@ -122,18 +129,34 @@ Widget _buildBody(BuildContext context, AsyncValue<List<MatchData>> matchesAsync
   );
 }
 
-// データが1件以上あるときの一覧表示。
-Widget _buildList(List<MatchData> matches) {
-  // ListView.builder = 表示される分だけWidgetを作る(画面外のアイテムは作らない)ので、
-  // 件数が多くても軽く動く。
-  return ListView.builder(
+// 「いいね」タブ専用: 2列グリッド表示。各カード([ReceivedLikeGridCard])は右スワイプ=マッチ(いいね返し)/左スワイプ=拒否(スキップ)に対応する。
+Widget _buildReceivedLikeGrid(List<MatchData> matches) {
+  return GridView.builder(
     padding: const EdgeInsets.all(12),
-    itemCount: matches.length,
-    // itemBuilder: リストの各行(index番目)をどう表示するか。
-    itemBuilder: (context, index) => Padding(
-      padding: const EdgeInsets.only(bottom: 8),
-      child: MatchProfileCard(match: matches[index]),
+    gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+      crossAxisCount: 2,
+      mainAxisSpacing: 12,
+      crossAxisSpacing: 12,
+      childAspectRatio: 0.68,
     ),
+    itemCount: matches.length,
+    itemBuilder: (context, index) => ReceivedLikeGridCard(match: matches[index]),
+  );
+}
+
+// 「マッチ」タブ専用: 2列グリッド表示。マッチ済みの相手には意思決定が不要なため、
+// アクションボタンを持たない[MatchGridCard]をタップで詳細シートを開くだけの構成にしている。
+Widget _buildMatchGrid(List<MatchData> matches) {
+  return GridView.builder(
+    padding: const EdgeInsets.all(12),
+    gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+      crossAxisCount: 2,
+      mainAxisSpacing: 12,
+      crossAxisSpacing: 12,
+      childAspectRatio: 0.75,
+    ),
+    itemCount: matches.length,
+    itemBuilder: (context, index) => MatchGridCard(match: matches[index]),
   );
 }
 
