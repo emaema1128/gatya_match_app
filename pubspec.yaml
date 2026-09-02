@@ -48,6 +48,9 @@ dependencies:
   record: ^7.1.1
   audioplayers: ^6.8.1
   path_provider: ^2.1.6
+  video_player: ^2.14.0
+  flutter_slidable: ^4.0.3
+  image: ^4.9.2
 dev_dependencies:
   flutter_test:
     sdk: flutter
@@ -102,6 +105,7 @@ flutter:
     - assets/images/chair2.png
     - assets/images/gacha_machine.png
     - assets/images/gacha_capsule.png
+    - assets/videos/
 
   # To add assets to your application, add an assets section, like this:
   # assets:

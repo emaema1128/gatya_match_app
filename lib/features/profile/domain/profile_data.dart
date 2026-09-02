@@ -11,6 +11,7 @@ class ProfileData {
     required this.username,
     required this.rejectMatchingMailFlag,
     required this.photoUrls,
+    required this.balance,
   });
 
   final Sex sex;
@@ -22,6 +23,10 @@ class ProfileData {
 
   /// インデックス0/1/2がbloomのimg1/img2/img3スロットに対応。空スロットはnull。
   final List<String?> photoUrls;
+
+  /// マイページホーム画面の「残ポイント」表示用(gacha_controller.dartと同じ`getUserData`の
+  /// `balance`を読んでいるだけで、別APIは叩いていない)。
+  final int balance;
 
   factory ProfileData.fromUserData(Map<String, dynamic> userData) {
     final sexValue = userData['sex']?.toString();
@@ -37,6 +42,7 @@ class ProfileData {
         resolveBloomAssetUrl(userData['img2_compress_path'] ?? userData['img2_path']),
         resolveBloomAssetUrl(userData['img3_compress_path'] ?? userData['img3_path']),
       ],
+      balance: asBloomInt(userData['balance']),
     );
   }
 }

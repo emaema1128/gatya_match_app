@@ -12,6 +12,7 @@ List<RouteBase> get $appRoutes => [
   $loginRoute,
   $registrationRoute,
   $profileRoute,
+  $myProfileRoute,
   $settingsRoute,
   $matchCelebrationRoute,
   $receivedLikeDetailRoute,
@@ -124,6 +125,33 @@ mixin _$ProfileRoute on GoRouteData {
 
   @override
   String get location => GoRouteData.$location('/profile');
+
+  @override
+  void go(BuildContext context) => context.go(location);
+
+  @override
+  Future<T?> push<T>(BuildContext context) => context.push<T>(location);
+
+  @override
+  void pushReplacement(BuildContext context) =>
+      context.pushReplacement(location);
+
+  @override
+  void replace(BuildContext context) => context.replace(location);
+}
+
+RouteBase get $myProfileRoute => GoRouteData.$route(
+  path: '/mypage/profile',
+
+  factory: _$MyProfileRoute._fromState,
+);
+
+mixin _$MyProfileRoute on GoRouteData {
+  static MyProfileRoute _fromState(GoRouterState state) =>
+      const MyProfileRoute();
+
+  @override
+  String get location => GoRouteData.$location('/mypage/profile');
 
   @override
   void go(BuildContext context) => context.go(location);

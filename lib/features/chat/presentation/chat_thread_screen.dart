@@ -9,6 +9,7 @@ import 'package:image_picker/image_picker.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:record/record.dart';
 
+import '../../../core/media/image_orientation.dart';
 import '../../../core/network/bloom_api_exception.dart';
 import '../application/chat_thread_controller.dart';
 import '../application/talk_list_controller.dart';
@@ -100,7 +101,7 @@ class _ChatThreadScreenState extends ConsumerState<ChatThreadScreen> {
     setState(() => _isSending = true);
     try {
       final bytes = await picked.readAsBytes();
-      final dataUri = 'data:image/jpeg;base64,${base64Encode(bytes)}';
+      final dataUri = 'data:image/jpeg;base64,${base64Encode(normalizeJpegOrientation(bytes))}';
       await ref.read(chatThreadControllerProvider(widget.partnerId).notifier).sendImage(dataUri);
     } catch (e) {
       if (!mounted) return;

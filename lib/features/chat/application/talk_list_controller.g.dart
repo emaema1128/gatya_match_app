@@ -27,7 +27,7 @@ final totalUnreadChatCountProvider = AutoDisposeProvider<int>.internal(
 // ignore: unused_element
 typedef TotalUnreadChatCountRef = AutoDisposeProviderRef<int>;
 String _$talkListControllerHash() =>
-    r'8029c267a653dff332ad3b2872993b09293bbe3d';
+    r'7e25469633f554bb858f8ccbcbc4d56b46d832b4';
 
 /// See also [TalkListController].
 @ProviderFor(TalkListController)

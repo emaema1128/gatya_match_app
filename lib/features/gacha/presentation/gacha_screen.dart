@@ -1,8 +1,9 @@
-// pi(円周率)とsin(サイン関数)を使ってアニメーションの揺れ・弧の動きを計算する。
-import 'dart:math' show pi, sin;
+// pi(円周率)とsin/cos(三角関数)を使ってアニメーションの揺れ・弧・放射状の動きを計算する。
+import 'dart:math' show pi, sin, cos;
 
 import 'package:flutter/material.dart'; // ボタンやテキストなど基本的なUI部品(マテリアルデザイン)
 import 'package:flutter_riverpod/flutter_riverpod.dart'; // 状態管理ライブラリ「Riverpod」
+import 'package:video_player/video_player.dart'; // 動画ファイル(mp4等)を再生するためのパッケージ
 
 import '../../../core/network/bloom_api_exception.dart';
 import '../../../core/router/app_routes.dart';
@@ -81,9 +82,11 @@ class _GachaScreenState extends ConsumerState<GachaScreen> {
       // ガチャ未実行(idle)のときは、ガチャ本体と「ガチャを回す」ボタンを表示する。
       case GachaSpinStatus.idle:
         return _buildIdle(context);
-      // ガチャ実行済み(revealed)のときは、カプセルが飛び出すアニメーションを表示する。
+      // ガチャ実行済み(revealed)のときは、まずドラゴンの動画演出を再生し、
+      // 終わったら(動画が無ければ即座に)カプセルが飛び出すいつもの演出に切り替える。
       case GachaSpinStatus.revealed:
         return _GachaSpinRevealAnimation(
+        // return _GachaRevealWithDragonIntro( //retrunをこっちに変えると、ドラゴンの動画演出が再生される。
           key: ValueKey(identityHashCode(state)),
           candidates: state.candidates,
           onSpinAgain: _spin,
@@ -150,6 +153,153 @@ List<Offset> _arcTargetsFor(int count) {
     2 => const [Offset(-70, 55), Offset(70, 55)],
     _ => const [Offset(-90, 70), Offset(0, 40), Offset(90, 70)],
   };
+}
+
+/// 「ガチャる」の直後にドラゴンの動画演出(`assets/videos/gacha_doragon_intro.mp4`、
+/// [README](../../../../assets/videos/README.md)参照)をフルスクリーンで再生し、終わったら
+/// (または動画素材が無ければ最初から)いつもの[_GachaSpinRevealAnimation](機体+カプセル演出)に
+/// 切り替えるラッパー。動画自体は[_DragonIntroFullscreenVideo]をルートとして重ねて表示することで、
+/// AppBarやボトムナビも隠した画面いっぱいの演出にしている。
+class _GachaRevealWithDragonIntro extends StatefulWidget {
+  const _GachaRevealWithDragonIntro({super.key, required this.candidates, required this.onSpinAgain});
+
+  final List<MatchData> candidates;
+  final VoidCallback onSpinAgain;
+
+  @override
+  State<_GachaRevealWithDragonIntro> createState() => _GachaRevealWithDragonIntroState();
+}
+
+class _GachaRevealWithDragonIntroState extends State<_GachaRevealWithDragonIntro> {
+  // 動画(フルスクリーンのルート)が閉じたら true にして、いつもの演出に切り替える。
+  bool _showCapsuleReveal = false;
+
+  @override
+  void initState() {
+    super.initState();
+    // build()の途中でNavigator.push()すると不具合が起きやすいため、フレーム描画後に開始する。
+    WidgetsBinding.instance.addPostFrameCallback((_) => _playDragonIntro());
+  }
+
+  Future<void> _playDragonIntro() async {
+    if (!mounted) return;
+    // rootNavigatorのルートとして重ねることで、ホームタブの外側(AppBar・ボトムナビ)も含めて覆う。
+    await Navigator.of(context, rootNavigator: true).push<void>(
+      PageRouteBuilder<void>(
+        opaque: true,
+        pageBuilder: (context, animation, secondaryAnimation) => const _DragonIntroFullscreenVideo(),
+      ),
+    );
+    if (mounted) setState(() => _showCapsuleReveal = true);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    if (_showCapsuleReveal) {
+      return _GachaSpinRevealAnimation(candidates: widget.candidates, onSpinAgain: widget.onSpinAgain);
+    }
+    // フルスクリーンの動画ルートが前面に重なっている間、この場所には何も表示しない。
+    return const SizedBox.shrink();
+  }
+}
+
+/// ドラゴンの動画をデバイス画面いっぱいに再生するフルスクリーンページ。
+/// 動画が終わる/スキップされる/素材が見つからない、のいずれかで自身をpopして呼び出し元に戻る。
+class _DragonIntroFullscreenVideo extends StatefulWidget {
+  const _DragonIntroFullscreenVideo();
+
+  @override
+  State<_DragonIntroFullscreenVideo> createState() => _DragonIntroFullscreenVideoState();
+}
+
+class _DragonIntroFullscreenVideoState extends State<_DragonIntroFullscreenVideo> {
+  static const _videoAssetPath = 'assets/videos/gacha_doragon_intro.mp4';
+
+  VideoPlayerController? _videoController;
+  bool _closed = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _initVideo();
+  }
+
+  Future<void> _initVideo() async {
+    final controller = VideoPlayerController.asset(_videoAssetPath);
+    try {
+      await controller.initialize();
+    } catch (_) {
+      // 動画ファイルがまだ配置されていない場合など。エラーにせず即座に閉じる。
+      controller.dispose();
+      _close();
+      return;
+    }
+    if (!mounted) {
+      controller.dispose();
+      return;
+    }
+    controller.addListener(_onVideoTick);
+    setState(() => _videoController = controller);
+    controller.play();
+  }
+
+  // 再生位置が動画の長さに達したら、再生終了とみなして閉じる。
+  void _onVideoTick() {
+    final value = _videoController?.value;
+    if (value == null || value.duration == Duration.zero) return;
+    if (value.position >= value.duration) _close();
+  }
+
+  void _close() {
+    if (_closed) return;
+    _closed = true;
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) Navigator.of(context).pop();
+    });
+  }
+
+  @override
+  void dispose() {
+    _videoController?.removeListener(_onVideoTick);
+    _videoController?.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final controller = _videoController;
+    return Scaffold(
+      backgroundColor: Colors.black,
+      body: Stack(
+        fit: StackFit.expand,
+        children: [
+          if (controller != null && controller.value.isInitialized)
+            // BoxFit.coverと同じ効果を狙って、動画を画面いっぱいに(はみ出す分は切り取って)敷き詰める。
+            FittedBox(
+              fit: BoxFit.cover,
+              child: SizedBox(
+                width: controller.value.size.width,
+                height: controller.value.size.height,
+                child: VideoPlayer(controller),
+              ),
+            ),
+          SafeArea(
+            child: Align(
+              alignment: Alignment.topRight,
+              child: Padding(
+                padding: const EdgeInsets.all(12),
+                child: TextButton(
+                  onPressed: _close,
+                  style: TextButton.styleFrom(foregroundColor: Colors.white, backgroundColor: Colors.black45),
+                  child: const Text('次へ'),
+                ),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
 }
 
 /// ガチャ本体からカプセルが排出され、震えてバーストし、候補の数だけカプセルが弧を描いて飛び出す演出。
@@ -254,9 +404,11 @@ class _GachaSpinRevealAnimationState extends State<_GachaSpinRevealAnimation> wi
             // Stack = 子要素を重ねて表示するレイアウト部品。カプセルたちを同じ場所を起点に重ねて表示し、位置をずらして飛び出す演出を作る。
             alignment: Alignment.topCenter,
             children: [
+              _buildBurstFlash(t), // バースト瞬間の光(モック: 演出をリッチにする追加分)
               _buildBigCapsule(t), // 排出される大きな1個のカプセル(バーストするまで)List.generate(人数, ...) = 候補の人数分だけウィジェットを作る。
               // ...(スプレッド演算子)でそのリストの中身をchildrenに展開している。
               ...List.generate(widget.candidates.length, (i) => _buildFlyingCapsule(t, i)),
+              _buildSparkleBurst(t), // バーストで飛び散る火花(モック: 演出をリッチにする追加分)
             ],
           ),
         ),
@@ -302,6 +454,59 @@ class _GachaSpinRevealAnimationState extends State<_GachaSpinRevealAnimation> wi
         // Transform.scale = 子要素を指定した倍率で拡大・縮小する。
         child: Transform.scale(scale: scale, child: const _Capsule(size: 72)),
       ),
+    );
+  }
+
+  // モック: 演出をリッチにする追加分。バーストの瞬間に一瞬だけ光る円を描画する(パッと明るくなってすぐ消える)。
+  Widget _buildBurstFlash(double t) {
+    final oldT = _oldT(t);
+    // flashT: 0.28〜0.45の間だけ光らせる(カプセルがバーストするタイミングに合わせている)。
+    final flashT = Interval(0.28, 0.45, curve: Curves.easeOut).transform(oldT);
+    if (flashT <= 0 || flashT >= 1) return const SizedBox.shrink();
+    final opacity = (1 - flashT) * 0.85; // 出た瞬間が一番明るく、すぐ透明になっていく
+    final scale = 0.4 + flashT * 2.0; // だんだん大きく広がっていく
+    return Opacity(
+      opacity: opacity.clamp(0.0, 1.0),
+      child: Transform.scale(
+        scale: scale,
+        child: Container(
+          width: 90,
+          height: 90,
+          decoration: const BoxDecoration(shape: BoxShape.circle, color: Colors.amberAccent),
+        ),
+      ),
+    );
+  }
+
+  // モック: 演出をリッチにする追加分。バーストの瞬間に小さな火花が放射状に飛び散る演出。
+  Widget _buildSparkleBurst(double t) {
+    final oldT = _oldT(t);
+    // sparkleT: 0.28〜0.55の間で火花が外側へ広がっていく進み具合。
+    final sparkleT = Interval(0.28, 0.55, curve: Curves.easeOut).transform(oldT);
+    if (sparkleT <= 0) return const SizedBox.shrink();
+    final opacity = (1 - sparkleT).clamp(0.0, 1.0);
+    if (opacity <= 0) return const SizedBox.shrink();
+    const sparkleCount = 8; // 火花の数
+    return Stack(
+      alignment: Alignment.topCenter,
+      // 8個の火花を均等な角度(2π/8ずつ)に配置し、進み具合に応じて外側へ飛ばす。
+      children: List.generate(sparkleCount, (i) {
+        final angle = (i / sparkleCount) * pi * 2;
+        final distance = sparkleT * 70;
+        final dx = cos(angle) * distance;
+        final dy = 8 + sin(angle) * distance * 0.6; // 縦方向はやや潰して楕円状に広げる
+        return Transform.translate(
+          offset: Offset(dx, dy),
+          child: Opacity(
+            opacity: opacity,
+            child: Container(
+              width: 8,
+              height: 8,
+              decoration: const BoxDecoration(shape: BoxShape.circle, color: Colors.white),
+            ),
+          ),
+        );
+      }),
     );
   }
 

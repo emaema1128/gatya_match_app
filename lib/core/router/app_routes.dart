@@ -13,6 +13,7 @@ import '../../features/matches/presentation/match_celebration_screen.dart';
 import '../../features/matches/presentation/match_list_screen.dart';
 import '../../features/matches/presentation/received_like_detail_screen.dart';
 import '../../features/point/presentation/points_tab_screen.dart';
+import '../../features/profile/presentation/profile_home_screen.dart';
 import '../../features/profile/presentation/profile_screen.dart';
 import '../../features/profile/presentation/settings_screen.dart';
 import '../../features/welcome/presentation/welcome_screen.dart';
@@ -92,6 +93,16 @@ class ProfileRoute extends GoRouteData with _$ProfileRoute {
 
   @override
   Widget build(BuildContext context, GoRouterState state) => const ProfileScreen(isOnboarding: true);
+}
+
+// 自分のプロフィールの閲覧・編集画面。マイページタブ(ProfileHomeScreen)の
+// 「プロフィールを確認・編集」ボタンからpushされる。
+@TypedGoRoute<MyProfileRoute>(path: '/mypage/profile')
+class MyProfileRoute extends GoRouteData with _$MyProfileRoute {
+  const MyProfileRoute();
+
+  @override
+  Widget build(BuildContext context, GoRouterState state) => const ProfileScreen();
 }
 
 // 設定画面(ログアウト等)。マイページタブ(ProfileScreen)の歯車アイコンからpushされる。
@@ -261,12 +272,13 @@ class ChatTabRoute extends GoRouteData with _$ChatTabRoute {
   Widget build(BuildContext context, GoRouterState state) => const ChatTabScreen();
 }
 
-// プロフィールタブ(マイページ)
+// プロフィールタブ(マイページ)。自分の写真・残ポイント・お知らせ等を表示するホーム画面。
+// 「プロフィールを確認・編集」をタップすると[MyProfileRoute]をpushする。
 class ProfileTabRoute extends GoRouteData with _$ProfileTabRoute {
   const ProfileTabRoute();
 
   @override
-  Widget build(BuildContext context, GoRouterState state) => const ProfileScreen();
+  Widget build(BuildContext context, GoRouterState state) => const ProfileHomeScreen();
 }
 
 // ポイントタブ

@@ -21,6 +21,12 @@ class TalkListController extends _$TalkListController {
     ref.invalidateSelf();
     await future;
   }
+
+  /// [targetId]を連絡拒否(NG)としてサーバーに登録する。
+  /// 一覧から即座に隠す処理(ローカル側)は呼び出し元が[BlockedTalkIdsController]を使って行う(このメソッドはサーバー呼び出しのみを担当する)。
+  Future<void> block(int targetId) async {
+    await ref.read(bloomApiClientProvider).callApi('updateContactNg', {'target_id': targetId});
+  }
 }
 
 /// ボトムナビの「チャット」タブ・トーク一覧に表示する未読件数の合計。
